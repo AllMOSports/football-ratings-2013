@@ -1,0 +1,33 @@
+name: 2013 Football Ratings
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-ratings:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4
+
+      - name: Run ratings script
+        run: python football_ratings_2013.py
+
+      - name: Commit and push football_ratings_2015.json
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add football_ratings_2013.json
+          git diff --staged --quiet || git commit -m "Update ratings $(date +'%Y-%m-%d')"
+          git push
