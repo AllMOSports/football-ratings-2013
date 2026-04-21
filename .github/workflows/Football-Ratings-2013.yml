@@ -24,7 +24,7 @@ jobs:
       - name: Run ratings script
         run: python football_ratings_2013.py
 
-      - name: Commit and push football_ratings_2015.json
+      - name: Commit and push football_ratings_2013.json
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
