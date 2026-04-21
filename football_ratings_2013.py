@@ -13,7 +13,7 @@ OUTPUT_PATH   = "football_ratings_2013.json"
 CSV_PATH      = "football_scoreboard_2013.csv"
 ITERATIONS    = 1000
 LEARNING_RATE = 0.1
-COMPETITIVE_THRESHOLD = 50  # Max OVR gap for Phase 2 iterations
+COMPETITIVE_THRESHOLD = 35  # Max OVR gap for Phase 2 iterations
  
 # --- SCRAPING ---
  
