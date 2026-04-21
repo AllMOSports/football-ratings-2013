@@ -28,6 +28,6 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add football_ratings_2013.json
+          git add .
           git diff --staged --quiet || git commit -m "Update ratings $(date +'%Y-%m-%d')"
           git push
