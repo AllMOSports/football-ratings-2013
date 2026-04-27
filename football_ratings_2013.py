@@ -11,12 +11,12 @@ import time
 # CONFIGURATION
 # ---------------------------------------------------------------------------
  
-SEASON_START  = date(2012, 8, 1)
-SEASON_END    = date(2012, 12, 15)
+SEASON_START  = date(2013, 8, 1)
+SEASON_END    = date(2013, 12, 15)
 BASE_URL      = "https://www.mshsaa.org/activities/scoreboard.aspx?alg=19&date={}"
 MAX_POINTS    = 100
-OUTPUT_PATH   = "football_ratings_2012.json"
-CSV_PATH      = "football_scoreboard_2012.csv"
+OUTPUT_PATH   = "football_ratings_2013.json"
+CSV_PATH      = "football_scoreboard_2013.csv"
 CLASSIFICATIONS_PATH  = "classifications.json"
 SCHOOLS_CSV           = "mshsaa_schools.csv"
 ITERATIONS            = 1000
