@@ -1,5 +1,5 @@
 {
-  "last_updated": "April 27, 2026 at 07:51 PM",
+  "last_updated": "April 27, 2026 at 08:00 PM",
   "league_average": 26.47,
   "teams": [
     {
@@ -1324,17 +1324,6 @@
     },
     {
       "ovr_rank": 121,
-      "school": "St. Pius X (Kansas City)",
-      "classification": 3,
-      "district": 8,
-      "ovr_rating": 8.67,
-      "off_rating": -1.82,
-      "off_rank": 170,
-      "def_rating": 10.48,
-      "def_rank": 89
-    },
-    {
-      "ovr_rank": 122,
       "school": "Ste. Genevieve",
       "classification": 3,
       "district": 1,
@@ -1343,6 +1332,17 @@
       "off_rank": 109,
       "def_rating": 2.77,
       "def_rank": 139
+    },
+    {
+      "ovr_rank": 122,
+      "school": "St. Pius X (Kansas City)",
+      "classification": 3,
+      "district": 8,
+      "ovr_rating": 8.67,
+      "off_rating": -1.82,
+      "off_rank": 170,
+      "def_rating": 10.48,
+      "def_rank": 89
     },
     {
       "ovr_rank": 123,
@@ -1357,17 +1357,6 @@
     },
     {
       "ovr_rank": 124,
-      "school": "East Buchanan",
-      "classification": 1,
-      "district": 8,
-      "ovr_rating": 8.51,
-      "off_rating": 15.23,
-      "off_rank": 58,
-      "def_rating": -6.72,
-      "def_rank": 197
-    },
-    {
-      "ovr_rank": 125,
       "school": "Palmyra",
       "classification": 2,
       "district": 5,
@@ -1376,6 +1365,17 @@
       "off_rank": 139,
       "def_rating": 6.53,
       "def_rank": 114
+    },
+    {
+      "ovr_rank": 125,
+      "school": "East Buchanan",
+      "classification": 1,
+      "district": 8,
+      "ovr_rating": 8.51,
+      "off_rating": 15.23,
+      "off_rank": 58,
+      "def_rating": -6.72,
+      "def_rank": 197
     },
     {
       "ovr_rank": 126,
@@ -2919,17 +2919,6 @@
     },
     {
       "ovr_rank": 266,
-      "school": "St. Vincent",
-      "classification": 1,
-      "district": 1,
-      "ovr_rating": -36.85,
-      "off_rating": -21.66,
-      "off_rank": 276,
-      "def_rating": -15.19,
-      "def_rank": 257
-    },
-    {
-      "ovr_rank": 267,
       "school": "Tipton",
       "classification": 1,
       "district": 4,
@@ -2938,6 +2927,17 @@
       "off_rank": 286,
       "def_rating": -13.71,
       "def_rank": 249
+    },
+    {
+      "ovr_rank": 267,
+      "school": "St. Vincent",
+      "classification": 1,
+      "district": 1,
+      "ovr_rating": -36.85,
+      "off_rating": -21.66,
+      "off_rank": 276,
+      "def_rating": -15.19,
+      "def_rank": 257
     },
     {
       "ovr_rank": 268,
