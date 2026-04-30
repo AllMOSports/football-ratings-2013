@@ -524,7 +524,7 @@ if __name__ == "__main__":
         print("No games found — exiting.")
         exit(1)
  
-if MANUAL_GAMES:
+    if MANUAL_GAMES:
         print(f"\nAdding {len(MANUAL_GAMES)} manual game(s)...")
         all_games.extend(MANUAL_GAMES)
 
