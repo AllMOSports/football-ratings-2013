@@ -31,13 +31,12 @@ COMPETITIVE_THRESHOLD = 45
 # Team names must match exactly the names in classifications.json.
 
 MANUAL_GAMES = [
-    # ("2013-09-13", "Staley", 61, "William Chrisman", 7),
-    # ("2013-09-20", "Blue Springs South", 23, "Staley", 20),
-    # ("2013-09-27", "Belton", 7, "Staley", 45),
-    # ("2013-10-04", "Staley", 12, "Fort Osage", 15),
-    # ("2013-10-11", "Staley", 0, "Kearney", 42),
-    # ("2013-10-18", "Oak Park", 0, "Staley", 42),
-    # ("2013-10-25", "North Kansas City", 0, "Staley", 47),
+    ("2013-09-13", "Staley", 61, "William Chrisman", 7),
+    ("2013-09-20", "Blue Springs South", 23, "Staley", 20),
+    ("2013-09-27", "Belton", 7, "Staley", 45),
+    ("2013-10-04", "Staley", 12, "Fort Osage", 15),
+    ("2013-10-11", "Staley", 0, "Kearney", 42),
+    ("2013-10-18", "Oak Park", 0, "Staley", 42),
 ]
  
 HEADERS = {
