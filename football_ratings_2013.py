@@ -22,6 +22,23 @@ SCHOOLS_CSV           = "mshsaa_schools.csv"
 ITERATIONS            = 1000
 LEARNING_RATE         = 0.1
 COMPETITIVE_THRESHOLD = 45
+
+# ---------------------------------------------------------------------------
+# MANUAL GAMES (not listed on MSHSAA Scoreboard)
+# ---------------------------------------------------------------------------
+# Add any games missing from the MSHSAA scoreboard here.
+# Format: ("YYYY-MM-DD", "Team 1 Name", score1, "Team 2 Name", score2)
+# Team names must match exactly the names in classifications.json.
+
+MANUAL_GAMES = [
+    # ("2013-09-13", "Staley", 61, "William Chrisman", 7),
+    # ("2013-09-20", "Blue Springs South", 23, "Staley", 20),
+    # ("2013-09-27", "Belton", 7, "Staley", 45),
+    # ("2013-10-04", "Staley", 12, "Fort Osage", 15),
+    # ("2013-10-11", "Staley", 0, "Kearney", 42),
+    # ("2013-10-18", "Oak Park", 0, "Staley", 42),
+    # ("2013-10-25", "North Kansas City", 0, "Staley", 47),
+]
  
 HEADERS = {
     "User-Agent": (
@@ -507,6 +524,10 @@ if __name__ == "__main__":
         print("No games found — exiting.")
         exit(1)
  
+if MANUAL_GAMES:
+        print(f"\nAdding {len(MANUAL_GAMES)} manual game(s)...")
+        all_games.extend(MANUAL_GAMES)
+
     print("\nDeduplicating games...")
     all_games = deduplicate_games(all_games)
  
