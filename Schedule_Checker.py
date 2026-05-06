@@ -93,19 +93,28 @@ def load_ranked_teams(path):
  
 def load_scoreboard(path):
     """
-    Returns a dict mapping frozenset({norm_team_a, norm_team_b}) -> list of parsed dates.
-    We use a 7-day window instead of exact date matching because MSHSAA schedule pages
-    store the scheduled/week-end date, not always the actual game date.
+    Returns:
+      pair_games  - dict mapping frozenset({norm_a, norm_b}) ->
+                    list of (parsed_date, home_score, away_score, norm_home, norm_away)
+      df          - the raw scoreboard DataFrame
+ 
+    Matching logic (see game_in_scoreboard) uses team names + scores so that
+    two different games between the same pair (e.g. regular season AND playoff)
+    are never collapsed into one.  Date is kept only as a tiebreaker fallback.
     """
     df = pd.read_csv(path)
-    df = df[["Date", "Home Team", "Away Team"]].dropna(subset=["Home Team", "Away Team"])
-    df["Date"]      = df["Date"].astype(str).str.strip()
-    df["norm_home"] = df["Home Team"].apply(normalize)
-    df["norm_away"] = df["Away Team"].apply(normalize)
+    df = df[["Date", "Home Team", "Home Score", "Away Team", "Away Score"]].dropna(
+        subset=["Home Team", "Away Team"]
+    )
+    df["Date"]       = df["Date"].astype(str).str.strip()
+    df["norm_home"]  = df["Home Team"].apply(normalize)
+    df["norm_away"]  = df["Away Team"].apply(normalize)
+    df["Home Score"] = pd.to_numeric(df["Home Score"], errors="coerce")
+    df["Away Score"] = pd.to_numeric(df["Away Score"], errors="coerce")
  
-    pair_dates = defaultdict(list)
+    pair_games = defaultdict(list)
     for _, row in df.iterrows():
-        pair = frozenset([row["norm_home"], row["norm_away"]])
+        pair   = frozenset([row["norm_home"], row["norm_away"]])
         parsed = None
         for fmt in ("%Y-%m-%d", "%m/%d/%Y"):
             try:
@@ -113,18 +122,34 @@ def load_scoreboard(path):
                 break
             except Exception:
                 pass
-        pair_dates[pair].append(parsed)
-    return pair_dates, df
+        pair_games[pair].append((
+            parsed,
+            row["Home Score"],
+            row["Away Score"],
+            row["norm_home"],
+            row["norm_away"],
+        ))
+    return pair_games, df
  
  
-def game_in_scoreboard(team_norm, opp_norm, game_date_str, pair_dates, window_days=7):
+def game_in_scoreboard(team_norm, opp_norm, game_date_str, pair_games,
+                       score_team=None, score_opp=None, window_days=7):
     """
-    Returns True if the scoreboard contains a game between team and opponent
-    within window_days of the given date.
+    Returns True if the scoreboard already contains this specific game.
+ 
+    Matching priority:
+      1. Teams + scores match exactly  -> definite match, return True
+      2. Teams match + date within window, but scores differ or unknown
+         -> treat as a DIFFERENT game (regular season vs playoff), return False
+         so the game is correctly flagged as missing if scores don't align.
+ 
+    This prevents two games between the same pair (e.g. a regular-season game
+    and a playoff rematch) from being incorrectly collapsed into one entry.
     """
     pair = frozenset([team_norm, opp_norm])
-    if pair not in pair_dates:
+    if pair not in pair_games:
         return False
+ 
     gdate = None
     for fmt in ("%m/%d/%Y", "%Y-%m-%d"):
         try:
@@ -132,12 +157,21 @@ def game_in_scoreboard(team_norm, opp_norm, game_date_str, pair_dates, window_da
             break
         except ValueError:
             pass
-    if gdate is None:
-        return False
-    return any(
-        sbdate is not None and abs((sbdate - gdate).days) <= window_days
-        for sbdate in pair_dates[pair]
-    )
+ 
+    for (sbdate, home_score, away_score, norm_home, norm_away) in pair_games[pair]:
+        # Determine which score belongs to team_norm vs opp_norm
+        if norm_home == team_norm:
+            sb_team_score, sb_opp_score = home_score, away_score
+        else:
+            sb_team_score, sb_opp_score = away_score, home_score
+ 
+        # Score-based match: if scores are known and match exactly, it's a duplicate
+        if (score_team is not None and score_opp is not None
+                and sb_team_score == score_team and sb_opp_score == score_opp):
+            return True
+ 
+    # No score match found — not in scoreboard
+    return False
  
  
 # ─────────────────────────────────────────────────────────────────────────────
@@ -327,8 +361,8 @@ def main():
     print(f"  {len(teams_df)} ranked teams.")
  
     print("Loading existing scoreboard ...")
-    pair_dates, _ = load_scoreboard(SCOREBOARD_FILE)
-    print(f"  {len(pair_dates)} unique team pairs in scoreboard.")
+    pair_games, _ = load_scoreboard(SCOREBOARD_FILE)
+    print(f"  {len(pair_games)} unique team pairs in scoreboard.")
  
     id_map = fetch_school_id_map()
  
@@ -381,7 +415,8 @@ def main():
                 if not opponent_in_rankings(opp_norm, ranked_norms):
                     continue
  
-                if not game_in_scoreboard(team_norm, opp_norm, game["date"], pair_dates):
+                if not game_in_scoreboard(team_norm, opp_norm, game["date"], pair_games,
+                                          score_team=game["score_team"], score_opp=game["score_opp"]):
                     print(f"  MISSING: {game['date']}  vs  {game['opponent']}"
                           f"  ({game['home_away']})  {game['score_team']}-{game['score_opp']}")
                     missing_rows.append({
