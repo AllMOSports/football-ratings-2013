@@ -11,17 +11,23 @@ import time
 # CONFIGURATION
 # ---------------------------------------------------------------------------
  
+SEASON_YEAR   = 2013
 SEASON_START  = date(2013, 8, 1)
 SEASON_END    = date(2013, 12, 15)
 BASE_URL      = "https://www.mshsaa.org/activities/scoreboard.aspx?alg=19&date={}"
 MAX_POINTS    = 100
-OUTPUT_PATH   = "football_ratings_2013.json"
-CSV_PATH      = "football_scoreboard_2013.csv"
+OUTPUT_PATH   = f"football_ratings_{SEASON_YEAR}.json"
+CSV_PATH      = f"football_scoreboard_{SEASON_YEAR}.csv"
 CLASSIFICATIONS_PATH  = "classifications.json"
 SCHOOLS_CSV           = "mshsaa_schools.csv"
 ITERATIONS            = 1000
 LEARNING_RATE         = 0.1
-COMPETITIVE_THRESHOLD = 40
+ 
+# --- v2 rating engine settings (soft weighting + shrinkage, replaces the
+#     old hard Phase-2 cutoff) ---
+COMPETITIVE_THRESHOLD = 40    # now the "half-weight" point of a smooth decay curve
+REGULARIZATION_K      = 3.0   # pseudo-games added to every team's denominator (shrinkage)
+MOV_CAP               = 28    # max points of "error" any single game can contribute
  
 # ---------------------------------------------------------------------------
 # MANUAL GAMES (not listed on MSHSAA Scoreboard)
@@ -31,280 +37,11 @@ COMPETITIVE_THRESHOLD = 40
 # Team names must match exactly the names in classifications.json.
  
 MANUAL_GAMES = [
-    ("2013-08-30", "Chaffee", 58, "Grandview (Hillsboro)", 15),
-    ("2013-09-20", "Portageville", 7, "Chaffee", 38),
-    ("2013-10-25", "Crystal City", 28, "Grandview (Hillsboro)", 0),
-    ("2013-08-30", "Hayti", 7, "Thayer", 16),
-    ("2013-09-27", "Portageville", 18, "Hayti", 12),
-    ("2013-10-04", "Malden", 53, "Hayti", 14),
-    ("2013-08-30", "Portageville", 39, "St. Pius X (Festus)", 21),
-    ("2013-09-06", "Kennett", 26, "Portageville", 6),
-    ("2013-09-13", "Malden", 32, "Portageville", 19),
-    ("2013-10-11", "Portageville", 53, "East Prairie", 0),
-    ("2013-10-18", "Grandview (Hillsboro)", 0, "St. Vincent", 63),
-    ("2013-09-13", "Thayer", 14, "Liberty (Mountain View)", 53),
-    ("2013-10-04", "Cabool", 27, "Thayer", 58),
-    ("2013-10-11", "Ava", 0, "Thayer", 8),
-    ("2013-10-25", "Mountain Grove", 14, "Thayer", 0),
-    ("2013-09-27", "Grandview (Hillsboro)", 0, "Valle Catholic", 48),
-    ("2013-08-30", "Lockwood with Golden City", 28, "Greenfield", 20),
-    ("2013-09-06", "Greenfield", 19, "Pierce City", 6),
-    ("2013-09-13", "Greenfield", 12, "Jasper", 26),
-    ("2013-09-20", "Archie", 20, "Greenfield", 35),
-    ("2013-09-27", "Greenfield", 15, "Liberal with Bronaugh", 6),
-    ("2013-10-04", "Sarcoxie", 31, "Greenfield", 8),
-    ("2013-10-11", "Greenfield", 14, "Diamond", 32),
-    ("2013-10-18", "Miller", 6, "Greenfield", 2),
-    ("2013-10-25", "McAuley Catholic", 22, "Greenfield", 6),
-    ("2013-09-20", "Jasper", 41, "Lockwood with Golden City", 14),
-    ("2013-10-11", "Jasper", 35, "Miller", 0),
-    ("2013-08-30", "Miller", 7, "Marionville", 46),
-    ("2013-09-20", "Marionville", 23, "Ash Grove", 31),
-    ("2013-10-11", "Fair Grove", 14, "Marionville", 49),
-    ("2013-10-18", "Skyline", 26, "Marionville", 40),
-    ("2013-09-27", "Ash Grove", 54, "McAuley Catholic", 14),
-    ("2013-10-04", "Diamond", 26, "McAuley Catholic", 6),
-    ("2013-10-11", "Lockwood with Golden City", 22, "McAuley Catholic", 39),
-    ("2013-09-06", "Liberal with Bronaugh", 6, "Miller", 28),
-    ("2013-09-20", "Miller", 14, "Diamond", 53),
-    ("2013-10-04", "Miller", 33, "Pierce City", 26),
-    ("2013-10-25", "Miller", 35, "Sarcoxie", 42),
-    ("2013-10-11", "Adrian", 18, "Osceola", 63),
-    ("2013-10-04", "Osceola", 63, "Archie", 20),
-    ("2013-09-06", "Osceola", 59, "Appleton City with Montrose", 22),
-    ("2013-09-13", "Osceola", 36, "Lexington", 21),
-    ("2013-09-20", "Drexel with Miami (Amoret)", 14, "Osceola", 37),
-    ("2013-10-18", "Cole Camp", 6, "Osceola", 46),
-    ("2013-10-04", "Ash Grove", 49, "Skyline", 28),
-    ("2013-10-04", "Wellington-Napoleon", 42, "Concordia", 68),
-    ("2013-10-25", "Trenton", 27, "Concordia", 44),
-    ("2013-09-13", "Wellington-Napoleon", 50, "Santa Fe", 44),
-    ("2013-09-20", "Knox County", 38, "Paris", 44),
-    ("2013-10-18", "Knox County", 36, "Schuyler County", 14),
-    ("2013-10-25", "North Shelby", 6, "Knox County", 32),
-    ("2013-08-30", "South Shelby", 23, "Louisiana", 20),
-    ("2013-09-20", "Louisiana", 14, "Mark Twain", 12),
-    ("2013-10-04", "Macon", 40, "Louisiana", 8),
-    ("2013-10-18", "Louisiana", 22, "Centralia", 55),
-    ("2013-08-30", "North Shelby", 0, "Westran", 48),
-    ("2013-09-06", "North Shelby", 20, "Fayette", 38),
-    ("2013-09-13", "Paris", 48, "North Shelby", 0),
-    ("2013-09-20", "Salisbury", 57, "North Shelby", 0),
-    ("2013-09-27", "Scotland County", 34, "North Shelby", 12),
-    ("2013-10-04", "North Shelby", 28, "Schuyler County", 36),
-    ("2013-10-11", "North Shelby", 12, "Putnam County", 46),
-    ("2013-09-06", "Schuyler County", 0, "Marceline", 50),
-    ("2013-10-11", "Schuyler County", 0, "Milan", 42),
-    ("2013-10-25", "Schuyler County", 6, "Scotland County", 47),
-    ("2013-10-18", "Scotland County", 14, "Putnam County", 20),
-    ("2013-09-06", "Macon", 25, "South Shelby", 14),
-    ("2013-09-13", "South Shelby", 14, "Palmyra", 56),
-    ("2013-09-20", "Centralia", 50, "South Shelby", 0),
-    ("2013-09-27", "South Shelby", 27, "Monroe City", 0),
-    ("2013-10-04", "South Shelby", 8, "Brookfield", 14),
-    ("2013-10-11", "Highland", 6, "South Shelby", 46),
-    ("2013-10-18", "Clark County", 7, "South Shelby", 35),
-    ("2013-10-25", "South Shelby", 41, "Mark Twain", 0),
-    ("2013-09-13", "Brookfield", 16, "Marceline", 14),
-    ("2013-09-06", "Albany", 26, "Milan", 48),
-    ("2013-09-13", "Putnam County", 0, "Trenton", 19),
-    ("2013-10-11", "West Platte", 14, "Mid-Buchanan", 27),
-    ("2013-09-27", "North Platte", 16, "West Platte", 35),
-    ("2013-10-04", "Lathrop", 59, "North Platte", 8),
-    ("2013-10-11", "North Platte", 9, "East Buchanan", 44),
-    ("2013-10-18", "Orrick", 6, "Wellington-Napoleon", 46),
-    ("2013-09-06", "Wellington-Napoleon", 0, "West Platte", 35),
-    ("2013-09-20", "Lexington", 47, "Wellington-Napoleon", 6),
-    ("2013-10-11", "St. Paul Lutheran (Concordia)", 50, "Wellington-Napoleon", 12),
-    ("2013-10-25", "Wellington-Napoleon", 34, "Sweet Springs with Malta Bend", 0),
-    ("2013-09-13", "West Platte", 45, "East Buchanan", 48),
-    ("2013-09-20", "West Platte", 16, "Lathrop", 39),
-    ("2013-10-04", "West Platte", 31, "Penney", 39),
-    ("2013-10-18", "Plattsburg", 18, "West Platte", 14),
-    ("2013-10-25", "Lawson", 42, "West Platte", 12),
-    ("2013-09-20", "Albany", 7, "Maysville", 14),
-    ("2013-10-11", "Albany", 0, "South Harrison", 68),
-    ("2013-10-18", "Albany", 14, "Gallatin", 28),
-    ("2013-09-20", "East Buchanan", 46, "Plattsburg", 12),
-    ("2013-10-18", "East Buchanan", 42, "Lathrop", 66),
-    ("2013-09-13", "Lathrop", 37, "Penney", 15),
-    ("2013-08-30", "Van Horn", 27, "Polo", 7),
-    ("2013-09-06", "Polo", 8, "Lathrop", 47),
-    ("2013-10-04", "Charleston", 40, "Kennett", 20),
-    ("2013-09-06", "Grandview (Hillsboro)", 8, "East Prairie", 43),
-    ("2013-09-13", "Grandview (Hillsboro)", 0, "St. Pius X (Festus)", 44),
-    ("2013-09-20", "Grandview (Hillsboro)", 29, "Missouri Military Academy", 22),
-    ("2013-10-04", "Herculaneum", 40, "Grandview (Hillsboro)", 18),
-    ("2013-10-11", "Jefferson (Festus)", 57, "Grandview (Hillsboro)", 22),
-    ("2013-10-18", "Malden", 54, "Kennett", 25),
-    ("2013-09-13", "Cuba", 32, "Houston", 24),
-    ("2013-10-18", "Fair Grove", 7, "Ash Grove", 43),
-    ("2013-10-25", "Fair Grove", 18, "Hollister", 38),
-    ("2013-08-30", "Houston", 16, "Salem", 48),
-    ("2013-10-11", "Willow Springs", 61, "Houston", 16),
-    ("2013-10-18", "Houston", 22, "Mountain Grove", 56),
-    ("2013-10-25", "Liberty (Mountain View)", 66, "Houston", 0),
-    ("2013-09-20", "Liberty (Mountain View)", 47, "Ava", 13),
-    ("2013-10-04", "Mountain Grove", 34, "Liberty (Mountain View)", 57),
-    ("2013-10-11", "Cabool", 25, "Liberty (Mountain View)", 59),
-    ("2013-08-30", "Logan-Rogersville", 0, "Mountain Grove", 38),
-    ("2013-09-13", "Mountain Grove", 33, "Ava", 20),
-    ("2013-09-27", "Mountain Grove", 55, "Cabool", 0),
-    ("2013-10-11", "Ash Grove", 42, "Pleasant Hope", 0),
-    ("2013-10-25", "Ash Grove", 21, "Strafford", 37),
-    ("2013-08-30", "Cabool", 25, "Ash Grove", 57),
-    ("2013-09-20", "Butler", 7, "Van Horn", 49),
-    ("2013-09-06", "Sarcoxie", 54, "Diamond", 28),
-    ("2013-09-13", "Lockwood with Golden City", 20, "Sarcoxie", 27),
-    ("2013-10-25", "Bowling Green", 0, "Central (Park Hills)", 52),
-    ("2013-09-20", "Macon", 41, "Clark County", 27),
-    ("2013-09-27", "Clark County", 35, "Mark Twain", 8),
-    ("2013-10-11", "Clark County", 6, "Centralia", 49),
-    ("2013-10-25", "Brookfield", 42, "Clark County", 6),
-    ("2013-08-30", "Centralia", 55, "Highland", 0),
-    ("2013-09-06", "Highland", 14, "Brookfield", 17),
-    ("2013-09-27", "Highland", 8, "Macon", 40),
-    ("2013-08-30", "Brookfield", 35, "Mark Twain", 0),
-    ("2013-09-06", "Mark Twain", 30, "Monroe City", 50),
-    ("2013-09-13", "Mark Twain", 8, "Centralia", 54),
-    ("2013-09-20", "Monroe City", 6, "Brookfield", 9),
-    ("2013-10-04", "Centralia", 48, "Monroe City", 6),
-    ("2013-09-06", "Palmyra", 24, "Centralia", 21),
-    ("2013-10-11", "Brookfield", 7, "Palmyra", 35),
-    ("2013-09-20", "Blair Oaks", 48, "Southern Boone", 0),
-    ("2013-10-25", "Blair Oaks", 48, "Eldon", 12),
-    ("2013-09-27", "Hermann", 66, "Owensville", 21),
-    ("2013-10-11", "Hermann", 26, "St. Clair", 22),
-    ("2013-09-27", "Holden", 62, "Lexington", 38),
-    ("2013-09-13", "O'Hara", 42, "Knob Noster", 14),
-    ("2013-10-04", "Lexington", 43, "Knob Noster", 13),
-    ("2013-10-18", "Richmond", 49, "Knob Noster", 0),
-    ("2013-09-13", "Sherwood", 15, "Van Horn", 33),
-    ("2013-10-11", "Southeast", 40, "Southwest Early College", 0),
-    ("2013-09-06", "Bishop LeBlond", 69, "East (Kansas City)", 6),
-    ("2013-09-27", "Brookfield", 9, "Centralia", 21),
-    ("2013-10-18", "Macon", 12, "Brookfield", 7),
-    ("2013-08-30", "Trenton", 28, "Carrollton", 14),
-    ("2013-09-20", "Carrollton", 41, "East (Kansas City)", 6),
-    ("2013-10-11", "Lexington", 28, "Carrollton", 12),
-    ("2013-09-27", "Lawson", 28, "Lathrop", 14),
-    ("2013-10-11", "Lathrop", 51, "Plattsburg", 27),
-    ("2013-08-30", "Lexington", 14, "Oak Grove", 40),
-    ("2013-09-06", "Lexington", 14, "Trenton", 27),
-    ("2013-10-18", "Lafayette County", 55, "Lexington", 6),
-    ("2013-10-25", "Richmond", 42, "Lexington", 20),
-    ("2013-08-30", "Plattsburg", 24, "Northeast (Kansas City)", 0),
-    ("2013-09-20", "Trenton", 7, "Lafayette County", 46),
-    ("2013-09-27", "Pembroke Hill", 33, "Trenton", 13),
-    ("2013-10-18", "Kirksville", 48, "Trenton", 14),
-    ("2013-09-13", "Kennett", 21, "Central (New Madrid County)", 40),
-    ("2013-08-30", "Sullivan", 0, "Central (Park Hills)", 3),
-    ("2013-09-06", "North County", 7, "Central (Park Hills)", 34),
-    ("2013-09-13", "Central (Park Hills)", 25, "Fredericktown", 0),
-    ("2013-09-27", "Ste. Genevieve", 14, "Central (Park Hills)", 17),
-    ("2013-10-04", "Central (Park Hills)", 34, "Potosi", 0),
-    ("2013-10-11", "Central (Park Hills)", 41, "Perryville", 0),
-    ("2013-10-18", "Central (Park Hills)", 39, "Dexter", 0),
-    ("2013-09-27", "Kennett", 15, "Dexter", 27),
-    ("2013-08-30", "Fredericktown", 27, "Kennett", 20),
-    ("2013-09-06", "Hillsboro", 28, "Fredericktown", 14),
-    ("2013-10-25", "North County", 41, "Fredericktown", 14),
-    ("2013-10-18", "Potosi", 27, "North County", 28),
-    ("2013-10-25", "DeSoto with Kingston", 13, "Potosi", 34),
-    ("2013-10-18", "DeSoto with Kingston", 21, "Ste. Genevieve", 49),
-    ("2013-08-30", "Owensville", 6, "St. Francis Borgia", 26),
-    ("2013-10-11", "Union", 49, "Owensville", 14),
-    ("2013-10-25", "Owensville", 21, "St. Clair", 34),
-    ("2013-09-06", "Ava", 40, "Logan-Rogersville", 3),
-    ("2013-10-18", "Ava", 48, "Cabool", 6),
-    ("2013-09-13", "Springfield Catholic", 14, "Logan-Rogersville", 41),
-    ("2013-09-20", "Logan-Rogersville", 23, "Marshfield", 50),
-    ("2013-09-27", "Reeds Spring", 34, "Logan-Rogersville", 14),
-    ("2013-10-04", "Logan-Rogersville", 0, "Aurora", 35),
-    ("2013-10-11", "Bolivar", 35, "Logan-Rogersville", 0),
-    ("2013-10-18", "Logan-Rogersville", 29, "Hollister", 26),
-    ("2013-09-27", "Monett", 26, "Aurora", 21),
-    ("2013-10-18", "Cassville", 21, "Aurora", 0),
-    ("2013-09-06", "Cassville", 45, "McDonald County", 7),
-    ("2013-09-20", "Cassville", 7, "Seneca", 26),
-    ("2013-09-27", "Carl Junction", 49, "Cassville", 14),
-    ("2013-10-04", "Cassville", 27, "Monett", 0),
-    ("2013-10-11", "East Newton", 6, "Cassville", 43),
-    ("2013-09-20", "East Newton", 0, "Monett", 34),
-    ("2013-09-27", "East Newton", 13, "Mt. Vernon", 32),
-    ("2013-10-25", "East Newton", 0, "Seneca", 44),
-    ("2013-09-20", "Bolivar", 48, "Hollister", 0),
-    ("2013-08-30", "Monett", 28, "Mt. Vernon", 14),
-    ("2013-09-06", "Neosho", 25, "Monett", 28),
-    ("2013-09-13", "Monett", 42, "McDonald County", 0),
-    ("2013-10-18", "Seneca", 27, "Monett", 0),
-    ("2013-10-25", "Monett", 6, "Carl Junction", 49),
-    ("2013-08-30", "Duchesne", 26, "Hillsboro", 6),
-    ("2013-10-25", "Centralia", 49, "Macon", 14),
-    ("2013-09-13", "Chillicothe", 7, "Maryville", 32),
-    ("2013-10-25", "Chillicothe", 35, "Benton", 20),
-    ("2013-10-04", "Center", 35, "Warrensburg", 2),
-    ("2013-10-11", "O'Hara", 10, "Center", 35),
-    ("2013-09-27", "Clinton", 7, "O'Hara", 27),
-    ("2013-10-18", "Warrensburg", 13, "Clinton", 20),
-    ("2013-10-18", "Oak Grove", 49, "Grain Valley", 22),
-    ("2013-10-25", "Grain Valley", 42, "Odessa", 13),
-    ("2013-10-04", "Southwest Early College", 6, "Pembroke Hill", 41),
-    ("2013-09-06", "St. Pius X (Kansas City)", 0, "Maryville", 46),
-    ("2013-10-04", "Benton", 6, "Maryville", 36),
-    ("2013-10-04", "Nevada", 46, "Northeast (Kansas City)", 0),
-    ("2013-08-30", "O'Hara", 36, "Richmond", 42),
-    ("2013-09-13", "Richmond", 23, "Excelsior Springs", 20),
-    ("2013-10-11", "Warrensburg", 13, "St. Pius X (Kansas City)", 35),
-    ("2013-10-18", "St. Pius X (Kansas City)", 21, "O'Hara", 20),
-    ("2013-09-27", "Farmington", 29, "North County", 56),
-    ("2013-09-20", "DeSoto with Kingston", 0, "Festus", 37),
-    ("2013-09-27", "Festus", 36, "Hillsboro", 50),
-    ("2013-10-04", "North County", 20, "Festus", 42),
-    ("2013-09-20", "North County", 55, "Hillsboro", 33),
-    ("2013-10-04", "Hillsboro", 60, "Windsor (Imperial)", 0),
-    ("2013-10-11", "Hillsboro", 48, "DeSoto with Kingston", 13),
-    ("2013-10-18", "Lutheran South", 42, "Hillsboro", 76),
-    ("2013-09-13", "DeSoto with Kingston", 33, "North County", 53),
-    ("2013-10-11", "Windsor (Imperial)", 14, "North County", 21),
-    ("2013-09-27", "Windsor (Imperial)", 8, "DeSoto with Kingston", 26),
-    ("2013-08-30", "St. Clair", 15, "Washington", 24),
-    ("2013-09-06", "St. Clair", 32, "DeSoto with Kingston", 22),
-    ("2013-09-27", "St. Clair", 21, "Union", 49),
-    ("2013-10-18", "St. Francis Borgia", 39, "St. Clair", 34),
-    ("2013-10-04", "DeSoto with Kingston", 6, "Union", 46),
-    ("2013-10-18", "Ozark", 0, "Webb City", 59),
-    ("2013-10-18", "Poplar Bluff", 42, "Normandy Collaborative", 14),
-    ("2013-09-20", "Helias Catholic", 17, "Hickman", 27),
-    ("2013-09-06", "Grain Valley", 23, "Benton", 17),
-    ("2013-09-13", "Warrensburg", 6, "Grain Valley", 47),
-    ("2013-09-20", "Grain Valley", 37, "Smith-Cotton", 14),
-    ("2013-09-06", "William Chrisman", 27, "Grandview", 48),
-    ("2013-09-20", "Warrensburg", 0, "Harrisonville", 48),
-    ("2013-09-06", "Pleasant Hill", 44, "Warrensburg", 0),
-    ("2013-08-30", "Warrensburg", 7, "Excelsior Springs", 33),
-    ("2013-09-27", "Smith-Cotton", 42, "Warrensburg", 6),
-    ("2013-10-25", "O'Hara", 47, "Warrensburg", 28),
-    ("2013-08-30", "Platte County", 42, "William Chrisman", 7),
-    ("2013-10-18", "Jackson", 27, "Hickman", 34),
-    ("2013-09-27", "Christian Brothers College", 27, "Vianney", 7),
-    ("2013-10-04", "Chaminade College Preparatory", 19, "Christian Brothers College", 47),
-    ("2013-10-05", "McCluer North", 31, "Hazelwood East", 30),
-    ("2013-09-06", "Holt", 15, "Hickman", 30),
-    ("2013-10-04", "Smith-Cotton", 36, "O'Hara", 43),
-    ("2013-10-25", "Neosho", 20, "Ozark", 41),
-    ("2013-10-11", "Nixa", 45, "Ozark", 7),
-    ("2013-09-27", "Ozark", 24, "Willard", 55),
-    ("2013-10-11", "Fort Osage", 56, "William Chrisman", 0),
-    ("2013-10-18", "William Chrisman", 19, "Truman", 13),
-    ("2013-10-18", "Central (St. Joseph)", 48, "Park Hill", 20),
-    ("2013-09-13", "Park Hill", 26, "Lee's Summit", 31),
-    ("2013-09-20", "Christian Brothers College", 49, "Lindbergh", 29),
-    ("2013-10-11", "Christian Brothers College", 14, "De Smet Jesuit", 11),
-    ("2013-10-25", "Francis Howell", 12, "Christian Brothers College", 30),
-    ("2013-08-30", "Hickman", 16, "Lee's Summit North", 27),
-    ("2013-10-04", "Hickman", 33, "Jefferson City", 40),
-    ("2013-10-25", "Hickman", 6, "Rockhurst", 21),
+    # NOTE: These are manually-added 2011 games that don't appear on the
+    # MSHSAA scoreboard. The list has been cleared for 2013 since none of
+    # the 2011 entries apply to this season. Re-populate with any 2013
+    # games missing from the scraped scoreboard, in the same format:
+    # ("YYYY-MM-DD", "Team 1 Name", score1, "Team 2 Name", score2)
 ]
  
 HEADERS = {
@@ -602,56 +339,69 @@ def save_csv(all_games):
  
  
 # ---------------------------------------------------------------------------
-# RATING ENGINE
+# RATING ENGINE (v2 -- soft competitiveness weighting + shrinkage regularization)
 # ---------------------------------------------------------------------------
+#
+# Replaces the old two-phase (all games, then hard <=40pt cutoff) approach.
+# A dominant team no longer has its rating fully decided by 1-2 close games:
+#   1. competitiveness_weight() gives every game a smooth weight based on
+#      the current rating gap, instead of an all-or-nothing 40-point cutoff.
+#   2. REGULARIZATION_K shrinks updates for teams with little competitive
+#      signal, instead of letting a tiny sample fully drive their rating.
+#   3. MOV_CAP bounds how much error any single game -- even a fully-weighted
+#      one -- can contribute, so no one result can swing a rating too hard.
+ 
+def competitiveness_weight(gap, scale=COMPETITIVE_THRESHOLD):
+    """
+    Smooth weight in (0, 1] based on the current OVR gap between two teams.
+    gap=0            -> weight 1.0 (fully counted)
+    gap=scale (40)   -> weight 0.5 (half counted)
+    gap=2*scale (80) -> weight 0.2 (mostly discounted, never fully zero)
+    """
+    return 1.0 / (1.0 + (gap / scale) ** 2)
+ 
  
 def run_iterations(games, teams, off_rating, def_rating, league_avg,
-                   iterations, phase_label, ovr_filter=None):
+                   iterations, phase_label="Fit"):
     for iteration in range(iterations):
-        off_error    = {t: 0.0 for t in teams}
-        def_error    = {t: 0.0 for t in teams}
-        games_played = {t: 0   for t in teams}
+        off_error  = {t: 0.0 for t in teams}
+        def_error  = {t: 0.0 for t in teams}
+        weight_sum = {t: 0.0 for t in teams}
  
-        eligible_games = games
-        if ovr_filter is not None:
-            eligible_games = [
-                (t1, t2, s1, s2) for t1, t2, s1, s2 in games
-                if abs((off_rating[t1] + def_rating[t1]) -
-                       (off_rating[t2] + def_rating[t2])) <= ovr_filter
-            ]
+        for t1, t2, actual_s1, actual_s2 in games:
+            gap = abs((off_rating[t1] + def_rating[t1]) -
+                      (off_rating[t2] + def_rating[t2]))
+            w = competitiveness_weight(gap)
  
-        for t1, t2, actual_s1, actual_s2 in eligible_games:
             predicted_s1 = off_rating[t1] - def_rating[t2] + league_avg
             predicted_s2 = off_rating[t2] - def_rating[t1] + league_avg
  
             error_s1 = actual_s1 - predicted_s1
             error_s2 = actual_s2 - predicted_s2
  
-            off_error[t1] += error_s1
-            off_error[t2] += error_s2
-            def_error[t1] += -error_s2
-            def_error[t2] += -error_s1
+            # MOV cap: bound the raw error before it's weighted/accumulated
+            error_s1 = max(-MOV_CAP, min(MOV_CAP, error_s1))
+            error_s2 = max(-MOV_CAP, min(MOV_CAP, error_s2))
  
-            games_played[t1] += 1
-            games_played[t2] += 1
+            off_error[t1] += w * error_s1
+            off_error[t2] += w * error_s2
+            def_error[t1] += -w * error_s2
+            def_error[t2] += -w * error_s1
+ 
+            weight_sum[t1] += w
+            weight_sum[t2] += w
  
         for team in teams:
-            if games_played[team] > 0:
-                off_rating[team] += (
-                    (off_error[team] / games_played[team]) * LEARNING_RATE
-                )
-                def_rating[team] += (
-                    (def_error[team] / games_played[team]) * LEARNING_RATE
-                )
+            # Shrinkage: denominator is (weighted games) + K, not just raw
+            # games played. Teams with low competitive weight get smaller,
+            # more conservative updates instead of being fully driven by
+            # 1-2 games.
+            denom = weight_sum[team] + REGULARIZATION_K
+            off_rating[team] += (off_error[team] / denom) * LEARNING_RATE
+            def_rating[team] += (def_error[team] / denom) * LEARNING_RATE
  
         if (iteration + 1) % 100 == 0:
-            eligible_count = (
-                len(eligible_games) if ovr_filter is not None else len(games)
-            )
-            print(
-                f"  [{phase_label}] Iteration {iteration + 1}/{iterations} complete"
-                + (f" | Competitive games: {eligible_count}" if ovr_filter else "")
-            )
+            print(f"  [{phase_label}] Iteration {iteration + 1}/{iterations} complete")
  
  
 def calculate_ratings(all_games, iterations=ITERATIONS):
@@ -668,20 +418,14 @@ def calculate_ratings(all_games, iterations=ITERATIONS):
     off_rating = {t: 0.0 for t in teams}
     def_rating = {t: 0.0 for t in teams}
  
-    print(f"\n  Running Phase 1 ({iterations} iterations, all games)...")
+    print(f"\n  Running rating fit ({iterations} iterations, soft-weighted "
+          f"by competitiveness [scale={COMPETITIVE_THRESHOLD}], "
+          f"shrinkage K={REGULARIZATION_K}, MOV cap={MOV_CAP})...")
     run_iterations(games, teams, off_rating, def_rating, league_avg,
-                   iterations=iterations, phase_label="Phase 1", ovr_filter=None)
- 
-    print(f"\n  Running Phase 2 ({iterations} iterations, "
-          f"competitive games within {COMPETITIVE_THRESHOLD} OVR pts)...")
-    run_iterations(games, teams, off_rating, def_rating, league_avg,
-                   iterations=iterations, phase_label="Phase 2",
-                   ovr_filter=COMPETITIVE_THRESHOLD)
+                   iterations=iterations, phase_label="Fit")
  
     ovr_rating = {t: round(off_rating[t] + def_rating[t], 2) for t in teams}
     return off_rating, def_rating, ovr_rating, league_avg
- 
- 
 # ---------------------------------------------------------------------------
 # JSON OUTPUT
 # ---------------------------------------------------------------------------
@@ -752,7 +496,7 @@ def save_class_jsons(off_rating, def_rating, ovr_rating, league_avg,
             print(f"  Class {cls}: no teams found — skipping.")
             continue
  
-        path = f"football_ratings_2013_class{cls}.json"
+        path = f"football_ratings_{SEASON_YEAR}_class{cls}.json"
         output = {
             "last_updated":   datetime.now().strftime("%B %d, %Y at %I:%M %p"),
             "league_average": round(league_avg, 2),
@@ -825,10 +569,10 @@ def save_rankings_csv(off_rating, def_rating, ovr_rating,
     ])
  
     if class_filter is None:
-        path  = "football_rankings_2013_all.csv"
+        path  = f"football_rankings_{SEASON_YEAR}_all.csv"
         label = "All teams"
     else:
-        path  = f"football_rankings_2013_class{class_filter}.csv"
+        path  = f"football_rankings_{SEASON_YEAR}_class{class_filter}.csv"
         label = f"Class {class_filter}"
  
     df.to_csv(path, index=False)
@@ -851,7 +595,7 @@ def save_all_rankings_csvs(off_rating, def_rating, ovr_rating,
 # ---------------------------------------------------------------------------
  
 if __name__ == "__main__":
-    print("=== MSHSAA Football Ratings 2013 ===")
+    print(f"=== MSHSAA Football Ratings {SEASON_YEAR} ===")
  
     print("\nLoading classifications...")
     team_to_class, team_to_district = load_classifications()
